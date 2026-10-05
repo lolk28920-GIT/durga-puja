@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Shubho Durga Puja</title>
-<meta name="description" content="A Durga Puja greeting with the dhak. Turn your sound on.">
+<meta name="description" content="A Durga Puja greeting from our team.">
 <meta property="og:title" content="Shubho Durga Puja">
-<meta property="og:description" content="A Durga Puja greeting with the dhak. Turn your sound on.">
+<meta property="og:description" content="A Durga Puja greeting from our team.">
 <meta property="og:image" content="https://lolk28920-git.github.io/durga-puja/preview.jpg">
 <meta property="og:url" content="https://lolk28920-git.github.io/durga-puja/">
 <meta property="og:type" content="website">
@@ -75,11 +75,10 @@ body{background:var(--night);color:var(--shola);font-family:var(--body);overflow
   <div class="card">
     <div class="bn">শুভ দুর্গাপূজা</div>
     <button class="begin" id="begin" type="button">Begin the darshan</button>
-    <div class="hint">Turn your sound on for the dhak</div>
   </div>
 </div>
 
-<div class="ctrl"><button id="mute" type="button" hidden>Sound off</button><button id="replay" type="button" hidden>Replay</button></div>
+<div class="ctrl"><button id="replay" type="button" hidden>Replay</button></div>
 
 <script>/**
  * @license
@@ -814,9 +813,8 @@ function update(T, t, dt) {
 
   // drummers
   for (const [d, sd] of [[dhakL, -1], [dhakR, 1]]) { const h = d.group.parent; h.position.set(sd * (portrait ? 1.55 : 3.0), .45, portrait ? 2.6 : 1.5); h.scale.setScalar(portrait ? .8 : 1); if (sd > 0) h.scale.x *= -1; }
-  if (started && audio) { strikesL = audio.strikes(0); strikesR = audio.strikes(1); }
-  else { strikesL = idleStrikes(t, 0); strikesR = idleStrikes(t, .25); }
-  dhakL.update(started && audio ? audio.now() : t, strikesL); dhakR.update(started && audio ? audio.now() : t, strikesR);
+  strikesL = idleStrikes(t, 0); strikesR = idleStrikes(t, .25);
+  dhakL.update(t, strikesL); dhakR.update(t, strikesR);
 
   // crowd sway, aarti circling, dhunuchi
   const fz = camDist - 4.2; crowd.position.z = fz;
@@ -837,57 +835,12 @@ function update(T, t, dt) {
     p.position.set(u.x + Math.sin(u.y * 1.3 + u.s) * .25, u.y, u.z); p.rotation.set(u.y * 3 * u.r.x + u.s, u.y * 2 * u.r.y, u.y * u.r.z); }
 }
 
-// ---------------- sound ----------------
-let audio = null;
-function makeAudio() {
-  const ac = new (window.AudioContext || window.webkitAudioContext)();
-  const master = ac.createGain(); master.gain.value = .85; master.connect(ac.destination);
-  const comp = ac.createDynamicsCompressor(); comp.connect(master);
-  const nb = ac.createBuffer(1, ac.sampleRate * .5, ac.sampleRate); const nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
-  function bass(at, v) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(130, at); o.frequency.exponentialRampToValueAtTime(52, at + .28); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .45); o.connect(g).connect(comp); o.start(at); o.stop(at + .5); }
-  function slap(at, v, f) { const s = ac.createBufferSource(); s.buffer = nb; const b = ac.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = f; b.Q.value = 1.4; const g = ac.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .12); s.connect(b).connect(g).connect(comp); s.start(at); s.stop(at + .15);
-    const o = ac.createOscillator(), g2 = ac.createGain(); o.frequency.setValueAtTime(f * .42, at); o.frequency.exponentialRampToValueAtTime(f * .3, at + .1); g2.gain.setValueAtTime(v * .5, at); g2.gain.exponentialRampToValueAtTime(.001, at + .14); o.connect(g2).connect(comp); o.start(at); o.stop(at + .16); }
-  function kanshor(at, v) { [612, 1037, 1489, 2111, 2873].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; g.gain.setValueAtTime(v / (i + 1.5), at); g.gain.exponentialRampToValueAtTime(.0008, at + .55 + i * .05); o.connect(g).connect(comp); o.start(at); o.stop(at + .8); }); }
-  function shankh(at, dur, v) { const o = ac.createOscillator(), o2 = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain(), f = ac.createBiquadFilter(), g = ac.createGain();
-    o.type = 'sawtooth'; o2.type = 'square'; o.frequency.setValueAtTime(300, at); o.frequency.linearRampToValueAtTime(338, at + dur * .6); o2.frequency.setValueAtTime(301.5, at); o2.frequency.linearRampToValueAtTime(339, at + dur * .6);
-    lfo.frequency.value = 5.2; lg.gain.value = 4; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
-    f.type = 'lowpass'; f.frequency.setValueAtTime(600, at); f.frequency.linearRampToValueAtTime(1700, at + dur * .5); f.Q.value = 3;
-    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(v, at + .6); g.gain.setValueAtTime(v, at + dur - .8); g.gain.linearRampToValueAtTime(0, at + dur);
-    o.connect(f); o2.connect(f); f.connect(g).connect(comp); [o, o2, lfo].forEach(x => { x.start(at); x.stop(at + dur + .1); }); }
-  function ulu(at, dur, v) { const o = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain(), g = ac.createGain(), am = ac.createGain(), alfo = ac.createOscillator(), alg = ac.createGain();
-    o.type = 'triangle'; o.frequency.value = 1150; lfo.frequency.value = 11; lg.gain.value = 170; lfo.connect(lg).connect(o.frequency);
-    alfo.frequency.value = 11; alg.gain.value = .35; alfo.connect(alg).connect(am.gain); am.gain.value = .65;
-    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(v, at + .2); g.gain.setValueAtTime(v, at + dur - .4); g.gain.linearRampToValueAtTime(0, at + dur);
-    o.connect(am).connect(g).connect(comp); [o, lfo, alfo].forEach(x => { x.start(at); x.stop(at + dur + .1); }); }
-  // 16-step dhak pattern. B = bass stroke, s = stick, k = kanshor. Left dhaki plays the B strokes, right dhaki the s strokes.
-  const pat = ['Bk', '', 's', 's', 'B', '', 's', '', 'Bs', 's', 's', '', 'B', 's', 'Bs', 's'];
-  let step = 0, next = 0, phase = 0; const hits = [[], []]; let handL = 0, handR = 0;
-  return { ac, master,
-    begin() { const at = ac.currentTime + .05; next = at + 2.4; step = 0; phase = 0; hits[0].length = hits[1].length = 0; shankh(at, 3.6, .22); },
-    now() { return ac.currentTime; },
-    strikes(i) { return hits[i]; },
-    tick(T) {
-      const bpm = T < 6.6 ? 96 : T < 9 ? 126 : 116, sx = 60 / bpm / 4;
-      while (next < ac.currentTime + .25) {
-        const e = pat[step % 16], acc = (T > 6.4 && T < 9) ? 1.35 : 1;
-        if (e.includes('B')) { bass(next, .9 * acc); hits[0].push({ hand: handL ^= 1, t: next }); }
-        if (e.includes('s')) { slap(next, .35 * acc, step % 4 === 2 ? 1900 : 1500); hits[1].push({ hand: handR ^= 1, t: next }); }
-        if (e.includes('k')) kanshor(next, .18);
-        if (step % 2 === 1 && T > 6.5) slap(next, .12, 2400);
-        next += sx; step++;
-      }
-      for (const h of hits) while (h.length > 24) h.shift();
-      if (!phase && T > 6.5) { phase = 1; const at = ac.currentTime + .05; shankh(at, 2.8, .2); ulu(at + .3, 2.6, .07); kanshor(at, .35); }
-    } };
-}
-
 // ---------------- loop ----------------
 const greet = document.getElementById('greet'), msg = document.getElementById('msg');
 let shown = false, last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now; const t = now / 1000;
   if (started) T = (now - t0) / 1000;
-  if (started && audio) audio.tick(T);
   update(T, t, dt);
   frameCamera(T, t);
   renderer.render(scene, camera);
@@ -897,17 +850,15 @@ function frame(now) {
 requestAnimationFrame(frame);
 window.__seek = (sec) => { started = true; t0 = performance.now() - sec * 1000; };
 
-const veil = document.getElementById('veil'), mute = document.getElementById('mute'), replay = document.getElementById('replay');
+const veil = document.getElementById('veil'), replay = document.getElementById('replay');
 function begin() {
-  try { if (!audio) audio = makeAudio(); audio.ac.resume(); audio.begin(); } catch (e) { audio = null; }
   greet.classList.add('hide'); msg.classList.add('hide'); shown = false; update.painted = false;
   for (const p of petals) p.userData.y = 7 + Math.random() * 8;
   t0 = performance.now() - (reduce ? 9000 : 0); started = true;
-  veil.classList.add('gone'); mute.hidden = !audio; replay.hidden = false;
+  veil.classList.add('gone'); replay.hidden = false;
 }
 document.getElementById('begin').addEventListener('click', begin);
 replay.addEventListener('click', begin);
-mute.addEventListener('click', () => { if (!audio) return; const on = audio.master.gain.value > 0; audio.master.gain.value = on ? 0 : .85; mute.textContent = on ? 'Sound on' : 'Sound off'; });
 })();
 </script>
 
